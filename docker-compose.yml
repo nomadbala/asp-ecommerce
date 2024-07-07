@@ -1,0 +1,12 @@
+﻿services:
+  userservice:
+    image: userservice
+    build:
+      context: .
+      dockerfile: UserService/Dockerfile
+
+  productservice:
+    image: productservice
+    build:
+      context: .
+      dockerfile: ProductService/Dockerfile
