@@ -8,14 +8,21 @@ namespace ProductService.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductsController(IProductsService service) : ControllerBase
+public class ProductsController : ControllerBase
 {
+    private readonly IProductsService _service;
+
+    public ProductsController(IProductsService service)
+    {
+        _service = service;
+    }
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Product>>> GetAllAsync()
     {
         try
         {
-            return StatusCode(StatusCodes.Status200OK, await service.GetAllAsync());
+            return StatusCode(StatusCodes.Status200OK, await _service.GetAllAsync());
         }
         catch (Exception e)
         {
@@ -26,9 +33,12 @@ public class ProductsController(IProductsService service) : ControllerBase
     [HttpPost]
     public async Task<ActionResult<Product>> CreateAsync([FromBody] CreateProductContract contract)
     {
+        if (!ModelState.IsValid)
+            return StatusCode(StatusCodes.Status400BadRequest, ModelState);
+        
         try
         {
-            return StatusCode(StatusCodes.Status201Created, await service.CreateAsync(contract));
+            return StatusCode(StatusCodes.Status201Created, await _service.CreateAsync(contract));
         }
         catch (Exception e)
         {
@@ -41,11 +51,15 @@ public class ProductsController(IProductsService service) : ControllerBase
     {
         try
         {
-            return StatusCode(StatusCodes.Status200OK, await service.GetByIdAsync(id));
+            return StatusCode(StatusCodes.Status200OK, await _service.GetByIdAsync(id));
         }
         catch (ElementNotFoundException e)
         {
             return StatusCode(StatusCodes.Status404NotFound, e.Message);
+        }
+        catch (BadHttpRequestException e)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, e.Message);
         }
         catch (Exception e)
         {
@@ -56,13 +70,20 @@ public class ProductsController(IProductsService service) : ControllerBase
     [HttpPut("{id}")]
     public async Task<ActionResult<Product>> UpdateAsync(Guid id, [FromBody] UpdateProductContract contract)
     {
+        if (!ModelState.IsValid)
+            return StatusCode(StatusCodes.Status400BadRequest, ModelState);
+        
         try
         {
-            return StatusCode(StatusCodes.Status200OK, await service.UpdateAsync(id, contract));
+            return StatusCode(StatusCodes.Status200OK, await _service.UpdateAsync(id, contract));
         }
         catch (ElementNotFoundException e)
         {
             return StatusCode(StatusCodes.Status404NotFound, e.Message);
+        }
+        catch (BadHttpRequestException e)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, e.Message);
         }
         catch (Exception e)
         {
@@ -75,13 +96,17 @@ public class ProductsController(IProductsService service) : ControllerBase
     {
         try
         {
-            await service.DeleteByIdAsync(id);
+            await _service.DeleteByIdAsync(id);
 
             return StatusCode(StatusCodes.Status200OK);
         }
         catch (ElementNotFoundException e)
         {
             return StatusCode(StatusCodes.Status404NotFound, e.Message);
+        }
+        catch (BadHttpRequestException e)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, e.Message);
         }
         catch (Exception e)
         {
@@ -98,11 +123,15 @@ public class ProductsController(IProductsService service) : ControllerBase
             IEnumerable<Product> products = new List<Product>();
 
             if (!string.IsNullOrEmpty(title))
-                products = await service.GetByTitleAsync(title);
+                products = await _service.GetByTitleAsync(title);
             else if (!string.IsNullOrEmpty(category))
-                products = await service.GetByCategoryAsync(category);
+                products = await _service.GetByCategoryAsync(category);
 
             return StatusCode(StatusCodes.Status200OK, products);
+        }
+        catch (BadHttpRequestException e)
+        {
+            return StatusCode(StatusCodes.Status400BadRequest, e.Message);
         }
         catch (Exception e)
         {

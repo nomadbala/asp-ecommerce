@@ -1,4 +1,5 @@
-﻿using ProductService.Contracts;
+﻿using System.Collections;
+using ProductService.Contracts;
 using ProductService.Models;
 
 namespace ProductService.Repositories;
@@ -10,6 +11,8 @@ public interface IProductsRepository
     Task<Product> CreateAsync(CreateProductContract contract);
 
     Task<Product> GetByIdAsync(Guid id);
+
+    Task<IEnumerable<Product>> GetByIdsAsync(IEnumerable<Guid> ids);
 
     Task<Product> UpdateAsync(Guid id, UpdateProductContract contract);
 

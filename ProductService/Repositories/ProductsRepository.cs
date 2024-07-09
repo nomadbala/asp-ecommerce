@@ -5,30 +5,46 @@ using ProductService.Models;
 
 namespace ProductService.Repositories;
 
-public class ProductsRepository(ProductServiceDatabaseContext context) : IProductsRepository
+public class ProductsRepository : IProductsRepository
 {
-    public async Task<IEnumerable<Product>> GetAllAsync() => await context.Products.ToListAsync();
+    private readonly ProductServiceDatabaseContext _context;
+
+    public ProductsRepository(ProductServiceDatabaseContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IEnumerable<Product>> GetAllAsync()
+    {
+        return await _context.Products.ToListAsync();
+    }
 
     public async Task<Product> CreateAsync(CreateProductContract contract)
     {
         var product = new Product(contract);
 
-        await context.AddAsync(product);
-        await context.SaveChangesAsync();
+        await _context.AddAsync(product);
+        await _context.SaveChangesAsync();
 
         return product;
     }
 
     public async Task<Product> GetByIdAsync(Guid id)
     {
-        var product = await context.Products.FirstOrDefaultAsync(product => product.Id == id);
-
+        var product = await _context.Products.FindAsync(id);
         return product ?? throw new ElementNotFoundException($"Product with id {id} not found");
+    }
+
+    public async Task<IEnumerable<Product>> GetByIdsAsync(IEnumerable<Guid> ids)
+    {
+        return await _context.Products
+            .Where(p => ids.Contains(p.Id))
+            .ToListAsync();
     }
 
     public async Task<Product> UpdateAsync(Guid id, UpdateProductContract contract)
     {
-        var product = await context.Products.FirstOrDefaultAsync(product => product.Id == id);
+        var product = await GetByIdAsync(id);
 
         if (product == null)
             throw new ElementNotFoundException($"Product with id {id} not found");
@@ -39,31 +55,32 @@ public class ProductsRepository(ProductServiceDatabaseContext context) : IProduc
         product.Category = contract.Category;
         product.StockQuantity = contract.StockQuantity;
 
-        await context.SaveChangesAsync();
+        await _context.SaveChangesAsync();
 
         return product;
     }
 
     public async Task DeleteByIdAsync(Guid id)
     {
-        if (!await context.Products.AnyAsync(product => product.Id == id))
+        var product = await GetByIdAsync(id);
+        
+        if (product == null)
             throw new ElementNotFoundException($"Product with id {id} not found");
 
-        await context.Products
-            .Where(product => product.Id == id)
-            .ExecuteDeleteAsync();
+        _context.Products.Remove(product);
+        await _context.SaveChangesAsync();
     }
 
     public async Task<IEnumerable<Product>> GetByTitleAsync(string title)
     {
-        return await context.Products
+        return await _context.Products
             .Where(product => product.Title == title)
             .ToListAsync();
     }
 
     public async Task<IEnumerable<Product>> GetByCategoryAsync(string category)
     {
-        return await context.Products
+        return await _context.Products
             .Where(product => product.Category == category)
             .ToListAsync();
     }

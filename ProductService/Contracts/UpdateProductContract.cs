@@ -1,3 +1,11 @@
-﻿namespace ProductService.Contracts;
+﻿using System.ComponentModel.DataAnnotations;
 
-public record UpdateProductContract(string Title, string Description, decimal Price, string Category, int StockQuantity);
+namespace ProductService.Contracts;
+
+public record UpdateProductContract(
+    [Required] string Title,
+    [Required] string Description,
+    [Required] decimal Price,
+    [Required] string Category,
+    [Required] int StockQuantity
+);
