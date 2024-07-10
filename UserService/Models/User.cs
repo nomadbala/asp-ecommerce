@@ -8,7 +8,7 @@ public enum UserRoles
     Client = 0,
     Administrator = 1
 }
-
+//
 [Table("Users")]
 public class User
 {
