@@ -18,6 +18,8 @@ builder.Services.AddScoped<IProductsService, ProductsService>();
 builder.Services.AddScoped<IOrdersRepository, OrdersRepository>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
 
+builder.Services.AddControllers();
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -25,6 +27,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.MapControllers();
 
 app.UseHttpsRedirection();
 

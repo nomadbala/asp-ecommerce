@@ -9,7 +9,7 @@ public enum UserRoles
     Administrator = 1
 }
 
-[Table("users")]
+[Table("Users")]
 public class User
 {
     public Guid Id { get; set; }

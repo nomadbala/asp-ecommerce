@@ -16,3 +16,9 @@
     build:
       context: .
       dockerfile: OrderService/Dockerfile
+
+  paymentservice:
+    image: paymentservice
+    build:
+      context: .
+      dockerfile: PaymentService/Dockerfile

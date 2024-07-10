@@ -1,18 +1,13 @@
 using Microsoft.EntityFrameworkCore;
-using UserService;
-using UserService.Repositories;
-using UserService.Services;
+using PaymentService;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<UserServiceDatabaseContext>(options =>
+builder.Services.AddDbContext<PaymentServiceDatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
-
-builder.Services.AddScoped<IUsersRepository, UsersRepository>();
-builder.Services.AddScoped<IUsersService, UsersService>();
 
 builder.Services.AddControllers();
 
