@@ -1,9 +1,8 @@
 ﻿using Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using OrderService.Contracts;
+using OrderService.HttpClients;
 using OrderService.Models;
-using ProductService.Services;
-using UserService.Services;
 
 namespace OrderService.Repositories;
 
@@ -11,15 +10,15 @@ public class OrdersRepository : IOrdersRepository
 {
     private readonly OrderServiceDatabaseContext _context;
 
-    private readonly IUsersService _usersService;
+    private readonly IUsersHttpClient _usersHttpClient;
 
-    private readonly IProductsService _productsService;
+    private readonly IProductsHttpClient _productsHttpClient;
 
-    public OrdersRepository(OrderServiceDatabaseContext context, IUsersService usersService, IProductsService productsService)
+    public OrdersRepository(OrderServiceDatabaseContext context, IUsersHttpClient usersHttpClient, IProductsHttpClient productsHttpClient)
     {
         _context = context;
-        _usersService = usersService;
-        _productsService = productsService;
+        _usersHttpClient = usersHttpClient;
+        _productsHttpClient = productsHttpClient;
     }
 
     public async Task<IEnumerable<Order>> GetAllAsync()
@@ -29,9 +28,9 @@ public class OrdersRepository : IOrdersRepository
 
     public async Task<Order> CreateAsync(CreateOrderContract contract)
     {
-        var customer = await _usersService.GetByIdAsync(contract.CustomerId);
+        var customer = await _usersHttpClient.GetByIdAsync(contract.CustomerId);
 
-        var products = (await _productsService.GetByIdsAsync(contract.ProductIds)).ToList();
+        var products = (await _productsHttpClient.GetByIdsAsync(contract.ProductIds)).ToList();
 
         var order = new Order
         {
@@ -61,7 +60,7 @@ public class OrdersRepository : IOrdersRepository
     {
         var order = await GetByIdAsync(id);
 
-        var products = (await _productsService.GetByIdsAsync(contract.ProductIds)).ToList();
+        var products = (await _productsHttpClient.GetByIdsAsync(contract.ProductIds)).ToList();
 
         order.ProductIds = products.Select(p => p.Id).ToList();
         order.Products = products;

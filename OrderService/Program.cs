@@ -1,9 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using OrderService;
+using OrderService.HttpClients;
 using OrderService.Repositories;
 using OrderService.Services;
-using ProductService.Services;
-using UserService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,12 +12,20 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<OrderServiceDatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
-builder.Services.AddScoped<IUsersService, UsersService>();
-builder.Services.AddScoped<IProductsService, ProductsService>();
+builder.Services.AddControllers();
+
 builder.Services.AddScoped<IOrdersRepository, OrdersRepository>();
 builder.Services.AddScoped<IOrdersService, OrdersService>();
 
-builder.Services.AddControllers();
+builder.Services.AddHttpClient<IUsersHttpClient, UsersHttpClient>(client =>
+{
+    client.BaseAddress = new Uri("http://userservice:80");
+});
+
+builder.Services.AddHttpClient<IProductsHttpClient, ProductsHttpClient>(client =>
+{
+    client.BaseAddress = new Uri("http://productservice:80/");
+});
 
 var app = builder.Build();
 
@@ -27,6 +34,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseRouting();
 
 app.MapControllers();
 

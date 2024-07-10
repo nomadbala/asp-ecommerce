@@ -13,6 +13,10 @@ public enum OrderStatus
 
 public class Order
 {
+    public Order()
+    {
+    }
+
     public Guid Id { get; set; }
     
     public Guid CustomerId { get; set; }
