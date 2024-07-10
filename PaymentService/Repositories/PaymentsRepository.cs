@@ -1,9 +1,8 @@
 ﻿using Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
-using OrderService.Services;
 using PaymentService.Contracts;
+using PaymentService.HttpClients;
 using PaymentService.Models;
-using UserService.Services;
 
 namespace PaymentService.Repositories;
 
@@ -11,15 +10,15 @@ public class PaymentsRepository : IPaymentsRepository
 {
     private readonly PaymentServiceDatabaseContext _context;
 
-    private readonly IUsersService _usersService;
+    private readonly IUsersHttpClient _usersHttpClient;
 
-    private readonly IOrdersService _ordersService;
+    private readonly IOrdersHttpClient _ordersHttpClient;
 
-    public PaymentsRepository(PaymentServiceDatabaseContext context, IUsersService usersService, IOrdersService ordersService)
+    public PaymentsRepository(PaymentServiceDatabaseContext context, IUsersHttpClient usersHttpClient, IOrdersHttpClient ordersHttpClient)
     {
         _context = context;
-        _usersService = usersService;
-        _ordersService = ordersService;
+        _usersHttpClient = usersHttpClient;
+        _ordersHttpClient = ordersHttpClient;
     }
 
     public async Task<IEnumerable<Payment>> GetAllAsync()
@@ -29,12 +28,12 @@ public class PaymentsRepository : IPaymentsRepository
 
     public async Task<Payment> CreateAsync(CreatePaymentContract contract)
     {
-        var user = await _usersService.GetByIdAsync(contract.UserId);
+        var user = await _usersHttpClient.GetByIdAsync(contract.UserId);
 
         if (user == null)
             throw new ElementNotFoundException($"User with id {contract.UserId} not found");
 
-        var order = await _ordersService.GetByIdAsync(contract.OrderId);
+        var order = await _ordersHttpClient.GetByIdAsync(contract.OrderId);
 
         if (order == null)
             throw new ElementNotFoundException($"Order with id {contract.OrderId} not found");

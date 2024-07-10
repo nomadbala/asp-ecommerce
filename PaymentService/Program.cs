@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService;
+using PaymentService.HttpClients;
 using PaymentService.Repositories;
 using PaymentService.Services;
 
@@ -15,6 +16,16 @@ builder.Services.AddHttpClient<IEpayService, EpayService>();
 
 builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
 builder.Services.AddScoped<IPaymentsService, PaymentsService>();
+
+builder.Services.AddHttpClient<IUsersHttpClient, UsersHttpClient>(client =>
+{
+    client.BaseAddress = new Uri("http://userservice:80");
+});
+
+builder.Services.AddHttpClient<IOrdersHttpClient, OrdersHttpClient>(client =>
+{
+    client.BaseAddress = new Uri("http://orderservice:80");
+});
 
 builder.Services.AddControllers();
 
