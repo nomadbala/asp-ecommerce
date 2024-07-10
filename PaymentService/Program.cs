@@ -9,6 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Configuration.AddJsonFile("paymentservice.appsettings.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile($"paymentservice.appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
 builder.Services.AddDbContext<PaymentServiceDatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
@@ -19,13 +22,14 @@ builder.Services.AddScoped<IPaymentsService, PaymentsService>();
 
 builder.Services.AddHttpClient<IUsersHttpClient, UsersHttpClient>(client =>
 {
-    client.BaseAddress = new Uri("http://userservice:80");
+    client.BaseAddress = new Uri("http://userservice:8080");
 });
 
 builder.Services.AddHttpClient<IOrdersHttpClient, OrdersHttpClient>(client =>
 {
-    client.BaseAddress = new Uri("http://orderservice:80");
+    client.BaseAddress = new Uri("http://orderservice:8080");
 });
+
 
 builder.Services.AddControllers();
 

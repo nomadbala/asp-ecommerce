@@ -9,6 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Configuration.AddJsonFile("orderservice.appsettings.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile($"orderservice.appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
 builder.Services.AddDbContext<OrderServiceDatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
@@ -19,12 +22,12 @@ builder.Services.AddScoped<IOrdersService, OrdersService>();
 
 builder.Services.AddHttpClient<IUsersHttpClient, UsersHttpClient>(client =>
 {
-    client.BaseAddress = new Uri("http://userservice:80");
+    client.BaseAddress = new Uri("http://userservice:8080");
 });
 
 builder.Services.AddHttpClient<IProductsHttpClient, ProductsHttpClient>(client =>
 {
-    client.BaseAddress = new Uri("http://productservice:80/");
+    client.BaseAddress = new Uri("http://productservice:8080");
 });
 
 var app = builder.Build();
