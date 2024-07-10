@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PaymentService;
+using PaymentService.Repositories;
 using PaymentService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,9 @@ builder.Services.AddDbContext<PaymentServiceDatabaseContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 builder.Services.AddHttpClient<IEpayService, EpayService>();
+
+builder.Services.AddScoped<IPaymentsRepository, PaymentsRepository>();
+builder.Services.AddScoped<IPaymentsService, PaymentsService>();
 
 builder.Services.AddControllers();
 

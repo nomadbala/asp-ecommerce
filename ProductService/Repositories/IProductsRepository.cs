@@ -12,8 +12,6 @@ public interface IProductsRepository
 
     Task<Product> GetByIdAsync(Guid id);
 
-    Task<IEnumerable<Product>> GetByIdsAsync(IEnumerable<Guid> ids);
-
     Task<Product> UpdateAsync(Guid id, UpdateProductContract contract);
 
     Task DeleteByIdAsync(Guid id);

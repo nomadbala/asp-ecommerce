@@ -5,6 +5,10 @@ namespace ProductService.Models;
 
 public class Product
 {
+    public Product()
+    {
+    }
+
     public Guid Id { get; set; }
 
     public string Title { get; set; }

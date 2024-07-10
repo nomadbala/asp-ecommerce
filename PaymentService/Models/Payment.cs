@@ -11,6 +11,10 @@ public enum PaymentStatus
 
 public class Payment
 {
+    public Payment()
+    {
+    }
+
     public Guid Id { get; set; }
     
     public Guid UserId { get; set; }

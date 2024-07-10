@@ -12,6 +12,10 @@ public enum UserRoles
 [Table("Users")]
 public class User
 {
+    public User()
+    {
+    }
+
     public Guid Id { get; set; }
 
     public string FullName { get; set; }

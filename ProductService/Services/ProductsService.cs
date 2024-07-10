@@ -30,14 +30,6 @@ public class ProductsService : IProductsService
         
         return await _repository.GetByIdAsync(id);
     }
-    
-    public async Task<IEnumerable<Product>> GetByIdsAsync(IEnumerable<Guid> ids)
-    {
-        if (!ids.Any())
-            throw new BadHttpRequestException($"Id`s cant be empty");
-        
-        return await _repository.GetByIdsAsync(ids);
-    }
 
     public async Task<Product> UpdateAsync(Guid id, UpdateProductContract contract)
     {
