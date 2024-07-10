@@ -1,9 +1,9 @@
 ﻿using PaymentService.Contracts;
 using PaymentService.Models;
 
-namespace PaymentService.Repositories;
+namespace PaymentService.Services;
 
-public interface IPaymentsRepository
+public interface IPaymentsService
 {
     Task<IEnumerable<Payment>> GetAllAsync();
 

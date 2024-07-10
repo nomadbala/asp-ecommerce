@@ -1,24 +1,66 @@
-﻿services:
+﻿version: '3.8'
+
+services:
   userservice:
     image: userservice
     build:
       context: .
       dockerfile: UserService/Dockerfile
+    ports:
+      - "7000:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    networks:
+      - backend
 
   productservice:
     image: productservice
     build:
       context: .
       dockerfile: ProductService/Dockerfile
+    ports:
+      - "7001:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    networks:
+      - backend
 
   orderservice:
     image: orderservice
     build:
       context: .
       dockerfile: OrderService/Dockerfile
+    ports:
+      - "7002:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    networks:
+      - backend
 
   paymentservice:
     image: paymentservice
     build:
       context: .
       dockerfile: PaymentService/Dockerfile
+    ports:
+      - "7003:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    networks:
+      - backend
+
+  apigateway:
+    image: apigateway
+    build:
+      context: .
+      dockerfile: ApiGateway/Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

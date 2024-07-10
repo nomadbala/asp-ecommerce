@@ -31,9 +31,6 @@ public class OrdersRepository : IOrdersRepository
     {
         var customer = await _usersService.GetByIdAsync(contract.CustomerId);
 
-        if (customer == null)
-            throw new ElementNotFoundException($"Customer with id {contract.CustomerId} not found");
-
         var products = (await _productsService.GetByIdsAsync(contract.ProductIds)).ToList();
 
         var order = new Order
@@ -64,9 +61,6 @@ public class OrdersRepository : IOrdersRepository
     {
         var order = await GetByIdAsync(id);
 
-        if (order == null)
-            throw new ElementNotFoundException($"Order with id {id} not found");
-
         var products = (await _productsService.GetByIdsAsync(contract.ProductIds)).ToList();
 
         order.ProductIds = products.Select(p => p.Id).ToList();
@@ -81,9 +75,6 @@ public class OrdersRepository : IOrdersRepository
     public async Task DeleteByIdAsync(Guid id)
     {
         var order = await GetByIdAsync(id);
-
-        if (order == null)
-            throw new ElementNotFoundException($"Order with id {id} not found");
 
         _context.Orders.Remove(order);
         await _context.SaveChangesAsync();

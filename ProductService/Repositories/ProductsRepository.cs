@@ -32,6 +32,7 @@ public class ProductsRepository : IProductsRepository
     public async Task<Product> GetByIdAsync(Guid id)
     {
         var product = await _context.Products.FindAsync(id);
+        
         return product ?? throw new ElementNotFoundException($"Product with id {id} not found");
     }
 
@@ -45,9 +46,6 @@ public class ProductsRepository : IProductsRepository
     public async Task<Product> UpdateAsync(Guid id, UpdateProductContract contract)
     {
         var product = await GetByIdAsync(id);
-
-        if (product == null)
-            throw new ElementNotFoundException($"Product with id {id} not found");
 
         product.Title = contract.Title;
         product.Description = contract.Description;
@@ -63,9 +61,6 @@ public class ProductsRepository : IProductsRepository
     public async Task DeleteByIdAsync(Guid id)
     {
         var product = await GetByIdAsync(id);
-        
-        if (product == null)
-            throw new ElementNotFoundException($"Product with id {id} not found");
 
         _context.Products.Remove(product);
         await _context.SaveChangesAsync();

@@ -43,9 +43,6 @@ public class UsersRepository : IUsersRepository
     {
         var user = await GetByIdAsync(id);
 
-        if (user == null)
-            throw new ElementNotFoundException($"User with id {id} not found");
-
         if (!await _context.Users.AnyAsync(u => u.Email == contract.Email))
             throw new ElementAlreadyExistsException($"User with email {contract.Email} already exists");
 
@@ -61,9 +58,6 @@ public class UsersRepository : IUsersRepository
     public async Task DeleteByIdAsync(Guid id)
     {
         var user = await GetByIdAsync(id);
-        
-        if (user == null)
-            throw new ElementNotFoundException($"User with id {id} not found");
 
         _context.Users.Remove(user);
         await _context.SaveChangesAsync();

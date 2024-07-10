@@ -3,9 +3,7 @@ using PaymentService.Models;
 
 namespace PaymentService.Contracts;
 
-public record CreatePaymentContract(
-    [Required] Guid UserId,
-    [Required] Guid OrderId,
+public record UpdatePaymentContract(
     [Required] decimal Amount,
     [Required] PaymentStatus Status
 );
