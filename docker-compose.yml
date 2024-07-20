@@ -6,8 +6,6 @@ services:
     build:
       context: .
       dockerfile: UserService/Dockerfile
-    ports:
-      - "7000:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
     networks:
@@ -18,8 +16,6 @@ services:
     build:
       context: .
       dockerfile: ProductService/Dockerfile
-    ports:
-      - "7001:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
     networks:
@@ -30,8 +26,6 @@ services:
     build:
       context: .
       dockerfile: OrderService/Dockerfile
-    ports:
-      - "7002:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
     networks:
@@ -42,8 +36,6 @@ services:
     build:
       context: .
       dockerfile: PaymentService/Dockerfile
-    ports:
-      - "7003:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
     networks:
@@ -60,6 +52,11 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
     networks:
       - backend
+    depends_on:
+      - userservice
+      - productservice
+      - orderservice
+      - paymentservice
 
 networks:
   backend:

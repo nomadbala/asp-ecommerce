@@ -10,10 +10,13 @@ builder.Services.AddHttpClient();
 
 builder.Services.AddControllers();
 
-builder.Services.AddOcelot();
+builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+builder.Services.AddOcelot(builder.Configuration);
 
 builder.Configuration.AddJsonFile("apigateway.appsettings.json", optional: true, reloadOnChange: true);
-builder.Configuration.AddJsonFile("apigateway.appsettings.{context.HostingEnvironment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+builder.Configuration.AddJsonFile($"apigateway.appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
 
 var app = builder.Build();
 
@@ -29,6 +32,6 @@ app.UseHttpsRedirection();
 
 app.UseRouting();
 
-app.UseOcelot().Wait();
+await app.UseOcelot();
 
 app.Run();

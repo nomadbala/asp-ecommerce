@@ -1,4 +1,5 @@
-﻿using UserService.Contracts;
+﻿using System.Text.Json;
+using UserService.Contracts;
 using UserService.Models;
 using UserService.Repositories;
 
@@ -7,10 +8,12 @@ namespace UserService.Services;
 public class UsersService : IUsersService
 {
     private readonly IUsersRepository _repository;
+    private readonly ILogger<UsersService> _logger;
 
-    public UsersService(IUsersRepository repository)
+    public UsersService(IUsersRepository repository, ILogger<UsersService> logger)
     {
         _repository = repository;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<User>> GetAllAsync()
@@ -27,7 +30,7 @@ public class UsersService : IUsersService
     {
         if (id == Guid.Empty)
             throw new BadHttpRequestException($"Invalid ID. {id}");
-        
+
         return await _repository.GetByIdAsync(id);
     }
 
@@ -35,7 +38,7 @@ public class UsersService : IUsersService
     {
         if (id == Guid.Empty)
             throw new BadHttpRequestException($"Invalid ID. {id}");
-        
+
         return await _repository.UpdateAsync(id, contract);
     }
 
@@ -48,7 +51,7 @@ public class UsersService : IUsersService
     {
         if (string.IsNullOrEmpty(fullName))
             throw new BadHttpRequestException($"Invalid name. {nameof(fullName)}");
-        
+
         return await _repository.GetByNameAsync(fullName);
     }
 
@@ -56,7 +59,7 @@ public class UsersService : IUsersService
     {
         if (string.IsNullOrEmpty(email))
             throw new BadHttpRequestException($"Invalid email. {nameof(email)}");
-        
+
         return await _repository.GetByEmailAsync(email);
     }
 }

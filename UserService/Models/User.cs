@@ -1,8 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 using UserService.Contracts;
 
 namespace UserService.Models;
 
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum UserRoles
 {
     Client = 0,

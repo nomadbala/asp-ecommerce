@@ -12,6 +12,8 @@ public class ProductsController : ControllerBase
 {
     private readonly IProductsService _service;
 
+    private readonly ILogger<ProductsController> _logger;
+
     public ProductsController(IProductsService service)
     {
         _service = service;
