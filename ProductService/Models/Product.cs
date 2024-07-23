@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using ProductService.Contracts;
+﻿using ProductService.Contracts;
 
 namespace ProductService.Models;
 

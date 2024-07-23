@@ -42,9 +42,7 @@ public class PaymentsRepository : IPaymentsRepository
         {
             Id = Guid.NewGuid(),
             UserId = user.Id,
-            User = user,
             OrderId = order.Id,
-            Order = order,
             Amount = contract.Amount,
             PaymentDate = DateTime.UtcNow,
             Status = contract.Status
@@ -52,6 +50,9 @@ public class PaymentsRepository : IPaymentsRepository
 
         await _context.AddAsync(payment);
         await _context.SaveChangesAsync();
+
+        payment.User = user;
+        payment.Order = order;
 
         return payment;
     }

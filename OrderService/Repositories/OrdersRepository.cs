@@ -36,15 +36,16 @@ public class OrdersRepository : IOrdersRepository
         {
             Id = Guid.NewGuid(),
             CustomerId = customer.Id,
-            Customer = customer,
             ProductIds = contract.ProductIds,
-            Products = products.ToList(),
             OrderDate = DateTime.UtcNow,
             Status = contract.Status
         };
 
         await _context.AddAsync(order);
         await _context.SaveChangesAsync();
+
+        order.Customer = customer;
+        order.Products = products.ToList();
 
         return order;
     }

@@ -30,7 +30,6 @@ builder.Services.AddHttpClient<IOrdersHttpClient, OrdersHttpClient>(client =>
     client.BaseAddress = new Uri("http://orderservice:8080");
 });
 
-
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -42,7 +41,5 @@ if (app.Environment.IsDevelopment())
 }
 
 app.MapControllers();
-
-app.UseHttpsRedirection();
 
 app.Run();

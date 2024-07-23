@@ -23,26 +23,9 @@ public class PaymentsService : IPaymentsService
 
     public async Task<Payment> CreateAsync(CreatePaymentContract contract)
     {
-        var token = await _epayService.GetPaymentTokenAsync();
+        var token = await _epayService.TokenAsync();
         
-        var paymentRequest = new PaymentRequest
-        {
-            Amount = contract.Amount,
-            Currency = "KZT",
-            CardHolderName = "SAPAR SAYAT",
-            InvoiceId = "000001",
-            InvoiceIdAlt = "8564546",
-            Description = "test payment",
-            AccountId = "uuid000001",
-            Email = "jj@example.com",
-            Phone = "77777777777",
-            CardSave = true,
-            Data = "{\"statement\":{\"name\":\"Arman Ali\",\"invoiceID\":\"80000016\"}}",
-            PostLink = "https://testmerchant/order/1123",
-            FailurePostLink = "https://testmerchant/order/1123/fail"
-        };
-
-        var paymentResponse = await _epayService.MakePaymentAsync(paymentRequest, token);
+        var paymentResponse = await _epayService.PayAsync();
 
         contract = contract with
         {
