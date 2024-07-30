@@ -1,4 +1,3 @@
-
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -105,7 +104,7 @@ public class PaymentResponse
     public string IntReference { get; set; }
     
     [JsonProperty("secure3D")]
-    public bool Secure3D { get; set; }
+    public bool? Secure3D { get; set; }
     
     [JsonProperty("cardID")]
     public string CardId { get; set; }
@@ -132,17 +131,17 @@ public class EpayService : IEpayService
         _httpClient = httpClient;
     }
 
-    public async Task<TokenResponse> GetTokenAsync()
+    public async Task<TokenResponse> GetTokenAsync(string invoiceId)
     {
         var url = "https://testoauth.homebank.kz/epay2/oauth2/token";
-        
+    
         var requestData = new Dictionary<string, string>
         {
             { "grant_type", "client_credentials" },
             { "scope", "webapi usermanagement email_send verification statement statistics payment" },
             { "client_id", "test" },
             { "client_secret", "yF587AV9Ms94qN2QShFzVR3vFnWkhjbAK3sG" },
-            { "invoice_id", "1" },
+            { "invoiceID", invoiceId },
             { "amount", "100" },
             { "currency", "KZT" },
             { "terminal", "67e34d63-102f-4bd1-898e-370781d0074d" }
@@ -152,19 +151,28 @@ public class EpayService : IEpayService
 
         var response = await _httpClient.PostAsync(url, request);
 
-        response.EnsureSuccessStatusCode();
+        var content = await response.Content.ReadAsStringAsync();
 
         if (response.IsSuccessStatusCode)
         {
-            var content = await response.Content.ReadAsStringAsync();
+            var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(content);
+        
+            if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken))
+            {
+                throw new InvalidOperationException($"Failed to get valid token. Response: {content}");
+            }
 
-            return JsonSerializer.Deserialize<TokenResponse>(content,
-                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? throw new InvalidOperationException();   
+            return tokenResponse;
         }
         else
         {
-            throw new Exception($"Ошибка при запросе токена: {response.ReasonPhrase}");
+            throw new HttpRequestException($"Ошибка при запросе токена: {response.StatusCode}, {content}");
         }
+    }
+    
+    public string GenerateUniqueInvoiceId()
+    {
+        return DateTime.UtcNow.Ticks.ToString();
     }
 
     public async Task<RSA> GetPublicKeyAsync()
@@ -182,36 +190,33 @@ public class EpayService : IEpayService
             throw new Exception("Error fetching public key", e);
         }
 
-        byte[] body;
+        string pemKey;
 
         try
         {
-            body = await response.Content.ReadAsByteArrayAsync();
+            pemKey = await response.Content.ReadAsStringAsync();
         }
         catch (IOException e)
         {
             throw new Exception("Error reading response body", e);
         }
 
-        X509Certificate2 certificate;
+        pemKey = pemKey.Replace("-----BEGIN PUBLIC KEY-----", "")
+            .Replace("-----END PUBLIC KEY-----", "")
+            .Replace("\n", "");
+
+        byte[] keyBytes = Convert.FromBase64String(pemKey);
 
         try
         {
-            certificate = new X509Certificate2(body);
+            RSA rsa = RSA.Create();
+            rsa.ImportSubjectPublicKeyInfo(keyBytes, out _);
+            return rsa;
         }
         catch (CryptographicException e)
         {
-            throw new Exception("Error parsing X509 certificate", e);
+            throw new Exception("Error parsing RSA public key", e);
         }
-
-        RSA rsaPublicKey = certificate.GetRSAPublicKey();
-
-        if (rsaPublicKey == null)
-        {
-            throw new Exception("Failed to parse RSA public key");
-        }
-
-        return rsaPublicKey;
     }
 
     public async Task<string> EncryptDataAsync()
@@ -238,19 +243,26 @@ public class EpayService : IEpayService
 
     public async Task<PaymentResponse> MakePaymentAsync()
     {
-        var url = "POST URL https://testepay.homebank.kz/api/payment/cryptopay";
+        var url = "https://testepay.homebank.kz/api/payment/cryptopay";
 
-        var token = await GetTokenAsync();
+        var invoice = GenerateUniqueInvoiceId();
+
+        var token = await GetTokenAsync(invoice);
+
+        if (string.IsNullOrEmpty(token.TokenType) || string.IsNullOrEmpty(token.AccessToken))
+        {
+            throw new InvalidOperationException($"Invalid token received. TokenType: {token.TokenType}, AccessToken: {(string.IsNullOrEmpty(token.AccessToken) ? "null" : "not null")}");
+        }
 
         var encryptedData = await EncryptDataAsync();
-        
+    
         var requestData = new
         {
             amount = 100,
             currency = "KZT",
             name = "JON JONSON",
             cryptogram = encryptedData,
-            invoiceId = "000000001",
+            invoiceId = invoice,
             invoiceIdAlt = "8564546",
             description = "test payment",
             accountId = "uuid000001",
@@ -266,13 +278,13 @@ public class EpayService : IEpayService
 
         var request = new HttpRequestMessage(HttpMethod.Post, url);
 
-        request.Headers.Authorization = new AuthenticationHeaderValue(token.TokenType, token.AccessToken);
         request.Content = content;
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
 
         var response = await _httpClient.SendAsync(request);
 
         var responseBody = await response.Content.ReadAsStringAsync();
-        
+    
         if (!response.IsSuccessStatusCode)
         {
             Console.WriteLine($"Error: {response.StatusCode}, Response: {responseBody}");
@@ -280,7 +292,5 @@ public class EpayService : IEpayService
         }
 
         return JsonConvert.DeserializeObject<PaymentResponse>(responseBody);
-
-
     }
 }

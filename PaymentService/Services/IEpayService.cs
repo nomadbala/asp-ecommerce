@@ -4,7 +4,7 @@ namespace PaymentService.Repositories;
 
 public interface IEpayService
 {
-    Task<TokenResponse> GetTokenAsync();
+    Task<TokenResponse> GetTokenAsync(string invoiceId);
     Task<RSA> GetPublicKeyAsync();
     Task<string> EncryptDataAsync();
     Task<PaymentResponse> MakePaymentAsync();
