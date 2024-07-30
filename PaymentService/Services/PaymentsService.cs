@@ -1,85 +1,86 @@
 ﻿using PaymentService.Contracts;
 using PaymentService.Models;
 using PaymentService.Repositories;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace PaymentService.Services;
-
-public class PaymentsService : IPaymentsService
+namespace PaymentService.Services
 {
-    private readonly IPaymentsRepository _repository;
-
-    private readonly IEpayService _epayService;
-
-    public PaymentsService(IPaymentsRepository repository, IEpayService epayService)
+    public class PaymentsService : IPaymentsService
     {
-        _repository = repository;
-        _epayService = epayService;
-    }
+        private readonly IPaymentsRepository _repository;
+        private readonly IEpayService _epayService;
 
-    public async Task<IEnumerable<Payment>> GetAllAsync()
-    {
-        return await _repository.GetAllAsync();
-    }
-
-    public async Task<Payment> CreateAsync(CreatePaymentContract contract)
-    {
-        var token = await _epayService.TokenAsync();
-        
-        var paymentResponse = await _epayService.PayAsync();
-
-        contract = contract with
+        public PaymentsService(IPaymentsRepository repository, IEpayService epayService)
         {
-            Status = paymentResponse.Status == "Success" ? PaymentStatus.Successful : PaymentStatus.Unsuccessful
-        };
+            _repository = repository;
+            _epayService = epayService;
+        }
 
-        return await _repository.CreateAsync(contract);
-    }
+        public async Task<IEnumerable<Payment>> GetAllAsync()
+        {
+            return await _repository.GetAllAsync();
+        }
 
-    public async Task<Payment> GetByIdAsync(Guid id)
-    {
-        if (id == Guid.Empty)
-            throw new BadHttpRequestException($"Invalid ID. {nameof(id)}");
+        public async Task<Payment> CreateAsync(CreatePaymentContract contract)
+        {
+            var paymentResponse = await _epayService.MakePaymentAsync();
 
-        return await _repository.GetByIdAsync(id);
-    }
+            contract = contract with
+            {
+                Status = paymentResponse.Status == "Success" ? PaymentStatus.Successful : PaymentStatus.Unsuccessful
+            };
 
-    public async Task<Payment> UpdateAsync(Guid id, UpdatePaymentContract contract)
-    {
-        if (id == Guid.Empty)
-            throw new BadHttpRequestException($"Invalid ID. {nameof(id)}");
+            return await _repository.CreateAsync(contract);
+        }
 
-        return await _repository.UpdateAsync(id, contract);
-    }
+        public async Task<Payment> GetByIdAsync(Guid id)
+        {
+            if (id == Guid.Empty)
+                throw new BadHttpRequestException($"Invalid ID. {nameof(id)}");
 
-    public async Task DeleteByIdAsync(Guid id)
-    {
-        if (id == Guid.Empty)
-            throw new BadHttpRequestException($"Invalid ID. {nameof(id)}");
+            return await _repository.GetByIdAsync(id);
+        }
 
-        await _repository.DeleteByIdAsync(id);
-    }
+        public async Task<Payment> UpdateAsync(Guid id, UpdatePaymentContract contract)
+        {
+            if (id == Guid.Empty)
+                throw new BadHttpRequestException($"Invalid ID. {nameof(id)}");
 
-    public async Task<IEnumerable<Payment>> GetByUserIdAsync(Guid userId)
-    {
-        if (userId == Guid.Empty)
-            throw new BadHttpRequestException($"Invalid user id. {nameof(userId)}");
+            return await _repository.UpdateAsync(id, contract);
+        }
 
-        return await _repository.GetByUserIdAsync(userId);
-    }
+        public async Task DeleteByIdAsync(Guid id)
+        {
+            if (id == Guid.Empty)
+                throw new BadHttpRequestException($"Invalid ID. {nameof(id)}");
 
-    public async Task<IEnumerable<Payment>> GetByOrderIdAsync(Guid orderId)
-    {
-        if (orderId == Guid.Empty)
-            throw new BadHttpRequestException($"Invalid order id. {nameof(orderId)}");
+            await _repository.DeleteByIdAsync(id);
+        }
 
-        return await _repository.GetByOrderIdAsync(orderId);
-    }
+        public async Task<IEnumerable<Payment>> GetByUserIdAsync(Guid userId)
+        {
+            if (userId == Guid.Empty)
+                throw new BadHttpRequestException($"Invalid user id. {nameof(userId)}");
 
-    public async Task<IEnumerable<Payment>> GetByStatusAsync(PaymentStatus status)
-    {
-        if (!Enum.IsDefined(typeof(PaymentStatus), status))
-            throw new BadHttpRequestException($"Invalid payment status. {nameof(status)}");
+            return await _repository.GetByUserIdAsync(userId);
+        }
 
-        return await _repository.GetByStatusAsync(status);
+        public async Task<IEnumerable<Payment>> GetByOrderIdAsync(Guid orderId)
+        {
+            if (orderId == Guid.Empty)
+                throw new BadHttpRequestException($"Invalid order id. {nameof(orderId)}");
+
+            return await _repository.GetByOrderIdAsync(orderId);
+        }
+
+        public async Task<IEnumerable<Payment>> GetByStatusAsync(PaymentStatus status)
+        {
+            if (!Enum.IsDefined(typeof(PaymentStatus), status))
+                throw new BadHttpRequestException($"Invalid payment status. {nameof(status)}");
+
+            return await _repository.GetByStatusAsync(status);
+        }
     }
 }

@@ -1,7 +1,11 @@
-namespace PaymentService.Services;
+using System.Security.Cryptography;
+
+namespace PaymentService.Repositories;
 
 public interface IEpayService
 {
-    Task<string> TokenAsync();
-    Task<PaymentResponse> PayAsync();
+    Task<TokenResponse> GetTokenAsync();
+    Task<RSA> GetPublicKeyAsync();
+    Task<string> EncryptDataAsync();
+    Task<PaymentResponse> MakePaymentAsync();
 }

@@ -1,186 +1,286 @@
-﻿using System.Net.Http.Headers;
+
+using System.Net.Http.Headers;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
+using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
-namespace PaymentService.Services;
+namespace PaymentService.Repositories;
+
+public class TokenRequest
+{
+    [JsonProperty("grant_type")]
+    public string GrantType { get; set; }
+
+    [JsonProperty("scope")]
+    public string Scope { get; set; }
+    
+    [JsonProperty("client_id")]
+    public string ClientId { get; set; }
+    
+    [JsonProperty("client_secret")]
+    public string ClientSecret { get; set; }
+    
+    [JsonProperty("invoiceID")]
+    public string InvoiceId { get; set; }
+
+    [JsonProperty("amount")]
+    public int Amount;
+
+    [JsonProperty("currency")]
+    public string Currency { get; set; }
+    
+    [JsonProperty("terminal")]
+    public string Terminal { get; set; }
+}
+
+public class TokenResponse
+{
+    [JsonProperty("access_token")]
+    public string AccessToken { get; set; }
+    
+    [JsonProperty("expires_in")]
+    public int ExpiresIn { get; set; }
+    
+    [JsonProperty("scope")]
+    public string Scope { get; set; }
+    
+    [JsonProperty("token_type")]
+    public string TokenType { get; set; }
+}
+
+public class CryptogramResponse
+{
+    [JsonProperty("hpan")]
+    public string Hpan { get; set; }
+    
+    [JsonProperty("expDate")]
+    public string ExpDate { get; set; }
+    
+    [JsonProperty("cvc")]
+    public string Cvc { get; set; }
+    
+    [JsonProperty("terminalId")]
+    public string TerminalId { get; set; }
+}
+
+public class PaymentResponse
+{
+    [JsonProperty("id")]
+    public string Id { get; set; }
+    
+    [JsonProperty("amount")]
+    public int Amount { get; set; }
+    
+    [JsonProperty("amountBonus")]
+    public int AmountBonus { get; set; }
+    
+    [JsonProperty("currency")]
+    public string Currency { get; set; }
+    
+    [JsonProperty("invoiceID")]
+    public string InvoiceId { get; set; }
+    
+    [JsonProperty("invoiceIdAlt")]
+    public string InvoiceIdAlt { get; set; }
+    
+    [JsonProperty("accountID")]
+    public string AccountId { get; set; }
+    
+    [JsonProperty("phone")]
+    public string Phone { get; set; }
+    
+    [JsonProperty("email")]
+    public string Email { get; set; }
+    
+    [JsonProperty("description")]
+    public string Description { get; set; }
+    
+    [JsonProperty("reference")]
+    public string Reference { get; set; }
+    
+    [JsonProperty("intReference")]
+    public string IntReference { get; set; }
+    
+    [JsonProperty("secure3D")]
+    public bool Secure3D { get; set; }
+    
+    [JsonProperty("cardID")]
+    public string CardId { get; set; }
+    
+    [JsonProperty("language")]
+    public string Language { get; set; }
+    
+    [JsonProperty("fee")]
+    public int Fee { get; set; }
+    
+    [JsonProperty("code")]
+    public int Code { get; set; }
+    
+    [JsonProperty("status")]
+    public string Status { get; set; }
+}
 
 public class EpayService : IEpayService
 {
-    private readonly HttpClient _client;
+    private readonly HttpClient _httpClient;
 
-    private readonly JsonSerializerOptions _jsonOptions;
-
-    public EpayService(HttpClient client)
+    public EpayService(HttpClient httpClient)
     {
-        _client = client ?? throw new ArgumentNullException(nameof(client));
-        _jsonOptions = new JsonSerializerOptions();
+        _httpClient = httpClient;
     }
 
-    public async Task<string> TokenAsync()
+    public async Task<TokenResponse> GetTokenAsync()
     {
-        var tokenUrl = "https://testoauth.homebank.kz/epay2/oauth2/token";
-
-        var data = new Dictionary<string, string>
+        var url = "https://testoauth.homebank.kz/epay2/oauth2/token";
+        
+        var requestData = new Dictionary<string, string>
         {
             { "grant_type", "client_credentials" },
             { "scope", "webapi usermanagement email_send verification statement statistics payment" },
-            { "client_id", ClientID },
-            { "client_secret", ClientSecret }
+            { "client_id", "test" },
+            { "client_secret", "yF587AV9Ms94qN2QShFzVR3vFnWkhjbAK3sG" },
+            { "invoice_id", "1" },
+            { "amount", "100" },
+            { "currency", "KZT" },
+            { "terminal", "67e34d63-102f-4bd1-898e-370781d0074d" }
         };
 
-        var requestContent = new FormUrlEncodedContent(data);
+        var request = new FormUrlEncodedContent(requestData);
 
-        Console.WriteLine($"Requesting token from: {tokenUrl}");
-        var response = await _client.PostAsync(tokenUrl, requestContent);
-        var responseContent = await response.Content.ReadAsStringAsync();
-        Console.WriteLine($"Token response: {responseContent}");
+        var response = await _httpClient.PostAsync(url, request);
 
+        response.EnsureSuccessStatusCode();
+
+        if (response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<TokenResponse>(content,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? throw new InvalidOperationException();   
+        }
+        else
+        {
+            throw new Exception($"Ошибка при запросе токена: {response.ReasonPhrase}");
+        }
+    }
+
+    public async Task<RSA> GetPublicKeyAsync()
+    {
+        string publicKeyUrl = "https://testepay.homebank.kz/api/public.rsa";
+        HttpResponseMessage response;
+
+        try
+        {
+            response = await _httpClient.GetAsync(publicKeyUrl);
+            response.EnsureSuccessStatusCode();
+        }
+        catch (HttpRequestException e)
+        {
+            throw new Exception("Error fetching public key", e);
+        }
+
+        byte[] body;
+
+        try
+        {
+            body = await response.Content.ReadAsByteArrayAsync();
+        }
+        catch (IOException e)
+        {
+            throw new Exception("Error reading response body", e);
+        }
+
+        X509Certificate2 certificate;
+
+        try
+        {
+            certificate = new X509Certificate2(body);
+        }
+        catch (CryptographicException e)
+        {
+            throw new Exception("Error parsing X509 certificate", e);
+        }
+
+        RSA rsaPublicKey = certificate.GetRSAPublicKey();
+
+        if (rsaPublicKey == null)
+        {
+            throw new Exception("Failed to parse RSA public key");
+        }
+
+        return rsaPublicKey;
+    }
+
+    public async Task<string> EncryptDataAsync()
+    {
+        var key = await GetPublicKeyAsync();
+
+        if (key == null)
+            throw new Exception($"NULL RSA KEY");
+
+        var data = new Dictionary<string, string>
+        {
+            { "hpan", "4405639704015096" },
+            { "expDate", "0125" },
+            { "cvc", "815" },
+            { "terminalId", "67e34d63-102f-4bd1-898e-370781d0074d" }
+        };
+
+        var jsonData = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(data));;
+
+        var encryptedData = key.Encrypt(jsonData, RSAEncryptionPadding.Pkcs1);
+
+        return Convert.ToBase64String(encryptedData);
+    }
+
+    public async Task<PaymentResponse> MakePaymentAsync()
+    {
+        var url = "POST URL https://testepay.homebank.kz/api/payment/cryptopay";
+
+        var token = await GetTokenAsync();
+
+        var encryptedData = await EncryptDataAsync();
+        
+        var requestData = new
+        {
+            amount = 100,
+            currency = "KZT",
+            name = "JON JONSON",
+            cryptogram = encryptedData,
+            invoiceId = "000000001",
+            invoiceIdAlt = "8564546",
+            description = "test payment",
+            accountId = "uuid000001",
+            email = "jj@example.com",
+            phone = "77777777777",
+            cardSave = true,
+            data = "{\"statement\":{\"name\":\"Arman Ali\",\"invoiceID\":\"80000016\"}}",
+            postLink = "https://testmerchant/order/1123",
+            failurePostLink = "https://testmerchant/order/1123/fail"
+        };
+
+        var content = new StringContent(JsonConvert.SerializeObject(requestData), Encoding.UTF8, "application/json");
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
+
+        request.Headers.Authorization = new AuthenticationHeaderValue(token.TokenType, token.AccessToken);
+        request.Content = content;
+
+        var response = await _httpClient.SendAsync(request);
+
+        var responseBody = await response.Content.ReadAsStringAsync();
+        
         if (!response.IsSuccessStatusCode)
         {
-            throw new Exception($"Failed to get token, status code: {response.StatusCode}, response: {responseContent}");
+            Console.WriteLine($"Error: {response.StatusCode}, Response: {responseBody}");
+            throw new Exception($"Error: {response.StatusCode}, Response: {responseBody}");
         }
 
-        try
-        {
-            var tokenResponse = JsonSerializer.Deserialize<TokenResponse>(responseContent, _jsonOptions);
-            if (tokenResponse == null)
-            {
-                throw new Exception("Deserialized token response is null");
-            }
-            if (string.IsNullOrEmpty(tokenResponse.AccessToken))
-            {
-                throw new Exception($"Access token is null or empty: 1. {tokenResponse} 2. {response} 3. {responseContent}");
-            }
+        return JsonConvert.DeserializeObject<PaymentResponse>(responseBody);
 
-            Console.WriteLine($"Deserialized token response: {JsonSerializer.Serialize(tokenResponse, _jsonOptions)}");
-            Console.WriteLine($"Access token: {tokenResponse.AccessToken.Substring(0, Math.Min(10, tokenResponse.AccessToken.Length))}... (truncated)");
 
-            return tokenResponse.AccessToken;
-        }
-        catch (JsonException ex)
-        {
-            Console.WriteLine($"JsonException during deserialization: {ex}");
-            Console.WriteLine($"Response content: {responseContent}");
-            throw new Exception("Failed to deserialize token response", ex);
-        }
     }
-
-    public async Task<PaymentResponse> PayAsync()
-    {
-        try
-        {
-            var token = await TokenAsync();
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new Exception("Failed to obtain a valid token");
-            }
-
-            var payUrl = "https://testepay.homebank.kz/api/payment/cryptopay";
-
-            var encryptedData = await EncryptDataAsync(DefaultPaymentData);
-            if (string.IsNullOrEmpty(encryptedData))
-            {
-                throw new Exception("Failed to encrypt payment data");
-            }
-
-            var requestData = new Dictionary<string, string>
-            {
-                { "amount", "100" },
-                { "currency", "KZT" },
-                { "name", "JON JONSON" },
-                { "cryptogram", encryptedData },
-                { "invoiceId", "000001" },
-                { "invoiceIdAlt", "8564546" },
-                { "description", "test payment" },
-                { "accountId", "uuid000001" },
-                { "email", "jj@example.com" },
-                { "phone", "77777777777" },
-                { "cardSave", "true" },
-                { "data", "{\"statement\":{\"name\":\"Arman Ali\",\"invoiceID\":\"80000016\"}}" },
-                { "postLink", "https://testmerchant/order/1123" },
-                { "failurePostLink", "https://testmerchant/order/1123/fail" }
-            };
-
-            var formContent = new FormUrlEncodedContent(requestData);
-
-            var request = new HttpRequestMessage(HttpMethod.Post, payUrl)
-            {
-                Content = formContent
-            };
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            Console.WriteLine($"Sending payment request to: {payUrl}");
-            Console.WriteLine($"Request headers: {request.Headers}");
-            Console.WriteLine($"Request content: {await formContent.ReadAsStringAsync()}");
-
-            var response = await _client.SendAsync(request);
-            var responseContent = await response.Content.ReadAsStringAsync();
-            Console.WriteLine($"Payment response: {responseContent}");
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception($"Failed to pay, status code: {response.StatusCode}, response: {responseContent}");
-            }
-
-            var paymentResponse = JsonSerializer.Deserialize<PaymentResponse>(responseContent);
-            if (paymentResponse == null)
-            {
-                throw new Exception("Failed to deserialize payment response");
-            }
-
-            return paymentResponse;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Exception in PayAsync: {ex}");
-            throw;
-        }
-    }
-
-    private async Task<string> EncryptDataAsync(string data)
-    {
-        var url = "https://testepay.homebank.kz/api/public.rsa";
-
-        Console.WriteLine($"Requesting public key from: {url}");
-        var response = await _client.GetAsync(url);
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new Exception("Failed to get public key, status code: " + response.StatusCode);
-        }
-
-        var body = await response.Content.ReadAsStringAsync();
-        if (string.IsNullOrEmpty(body))
-        {
-            throw new Exception("Received empty public key");
-        }
-
-        var pem = body.Trim();
-        Console.WriteLine($"Received public key: {pem.Substring(0, Math.Min(50, pem.Length))}... (truncated)");
-
-        using var rsa = RSA.Create();
-        try
-        {
-            rsa.ImportFromPem(pem.ToCharArray());
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("Failed to import public key", ex);
-        }
-
-        var encryptedData = rsa.Encrypt(Encoding.UTF8.GetBytes(data), RSAEncryptionPadding.Pkcs1);
-        var base64EncryptedData = Convert.ToBase64String(encryptedData);
-        Console.WriteLine($"Encrypted data: {base64EncryptedData.Substring(0, Math.Min(50, base64EncryptedData.Length))}... (truncated)");
-
-        return base64EncryptedData;
-    }
-
-    private const string ClientID = "test";
-    private const string ClientSecret = "yF587AV9Ms94qN2QShFzVR3vFnWkhjbAK3sG";
-    private const string DefaultPaymentData = @"{
-            ""hpan"":""4405639704015096"",
-            ""expDate"":""0125"",
-            ""cvc"":""815"",
-            ""terminalId"":""67e34d63-102f-4bd1-898e-370781d0074d""
-        }";
 }

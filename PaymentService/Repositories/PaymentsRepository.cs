@@ -57,6 +57,14 @@ public class PaymentsRepository : IPaymentsRepository
         return payment;
     }
 
+    public async Task<Payment> Save(Payment payment)
+    {
+        await _context.AddAsync(payment);
+        await _context.SaveChangesAsync();
+
+        return payment;
+    }
+
     public async Task<Payment> GetByIdAsync(Guid id)
     {
         var payment = await _context.Payments.FindAsync(id);
