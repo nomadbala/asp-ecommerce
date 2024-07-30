@@ -4,4 +4,4 @@ COPY docker-compose.yml /app/docker-compose.yml
 
 WORKDIR /app
 
-CMD ["up"]
+CMD ["docker-compose", "up"]
