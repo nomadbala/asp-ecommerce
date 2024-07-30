@@ -4,11 +4,14 @@ using Ocelot.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddHttpClient();
 
 builder.Services.AddControllers();
+
+builder.Services.AddHealthChecks();
 
 builder.Configuration.AddJsonFile("ocelot.json", optional: false, reloadOnChange: true)
     .AddEnvironmentVariables();
@@ -20,11 +23,10 @@ builder.Configuration.AddJsonFile($"apigateway.appsettings.{builder.Environment.
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
+
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 

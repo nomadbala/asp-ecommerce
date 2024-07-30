@@ -1,5 +1,5 @@
-# Use a base image with .NET SDK (adjust the version as needed)
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+# Use .NET 8.0 SDK as the base image for building
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
 # Set the working directory in the container
 WORKDIR /app
@@ -10,8 +10,8 @@ COPY . .
 # Build the projects
 RUN dotnet publish -c Release -o out
 
-# Use a smaller runtime image for the final stage
-FROM mcr.microsoft.com/dotnet/aspnet:7.0
+# Use .NET 8.0 runtime as the base image for the final stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
 
 # Install Docker and Docker Compose
 RUN apt-get update && apt-get install -y \
